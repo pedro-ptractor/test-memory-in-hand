@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses    Address[]
+  subscription Subscription?
+  photoPacks   PhotoPack[]
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  recipient  String
+  zipCode    String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  phone      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Plan {
+  id         String   @id @default(uuid())
+  name       String
+  price      Decimal
+  photoLimit Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  planId    String
+  startDate DateTime @default(now())
+  active    Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+model MonthlyCycle {
+  id        String   @id @default(uuid())
+  year      Int
+  month     Int
+  createdAt DateTime @default(now())
+
+  photoPacks PhotoPack[]
+}
+
+model PhotoPack {
+  id              String     @id @default(uuid())
+  userId          String
+  monthlyCycleId  String
+  addressSnapshot Json
+  status          PackStatus @default(PENDING)
+  trackingCode    String?
+  shippingDate    DateTime?
+  createdAt       DateTime   @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  monthlyCycle MonthlyCycle @relation(fields: [monthlyCycleId], references: [id])
+  photos       Photo[]
+}
+
+model Photo {
+  id          String   @id @default(uuid())
+  photoPackId String
+  url         String
+  createdAt   DateTime @default(now())
+
+  photoPack PhotoPack @relation(fields: [photoPackId], references: [id])
+}
+
+enum PackStatus {
+  PENDING
+  SENT_TO_LAB
+  PRINTED
+  SHIPPED
+  DELIVERED
+}
+
+enum Role {
+  USER
+  ADMIN
+}
