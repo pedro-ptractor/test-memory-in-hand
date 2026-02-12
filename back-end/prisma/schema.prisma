@@ -22,9 +22,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  addresses    Address[]
-  subscription Subscription?
-  photoPacks   PhotoPack[]
+  addresses     Address[]
+  photoPacks    PhotoPack[]
+  subscriptions Subscription[]
 }
 
 model Address {
@@ -57,22 +57,28 @@ model Plan {
 }
 
 model Subscription {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  planId    String
-  startDate DateTime @default(now())
-  active    Boolean  @default(true)
+  id                    String             @id @default(uuid())
+  status                SubscriptionStatus @default(PENDING)
+  gatewayCustomerId     String?
+  gatewaySubscriptionId String?
+  gatewayPaymentId      String?
+  startDate             DateTime?
+  endDate               DateTime?
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id])
+  planId                String
+  plan                  Plan               @relation(fields: [planId], references: [id])
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
-  plan Plan @relation(fields: [planId], references: [id])
+  @@index([userId])
 }
 
 model MonthlyCycle {
-  id        String   @id @default(uuid())
-  year      Int
-  month     Int
-  createdAt DateTime @default(now())
-
+  id         String      @id @default(uuid())
+  year       Int
+  month      Int
+  createdAt  DateTime    @default(now())
   photoPacks PhotoPack[]
 }
 
@@ -111,4 +117,11 @@ enum PackStatus {
 enum Role {
   USER
   ADMIN
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  CANCELED
+  EXPIRED
 }
