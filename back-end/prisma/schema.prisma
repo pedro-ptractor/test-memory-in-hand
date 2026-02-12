@@ -18,6 +18,8 @@ model User {
   name      String
   email     String   @unique
   password  String
+  phone     String
+  cpf       String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,7 +40,6 @@ model Address {
   district   String
   city       String
   state      String
-  phone      String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

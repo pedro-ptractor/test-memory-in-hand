@@ -6,6 +6,7 @@ const envSchema = z.object({
   HOST: z.string().default('127.0.0.1'),
   PORT: z.string().default('3333'),
   JWT_SECRET: z.string(),
+  ABACATEPAY_SECRET: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);

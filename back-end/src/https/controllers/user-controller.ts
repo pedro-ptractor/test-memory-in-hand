@@ -10,17 +10,17 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     email: z.email(),
     password: z.string().min(6),
     planId: z.string(),
+    phone: z.string(),
+    cpf: z.string(),
   });
 
-  const { name, email, password, planId } = bodySchema.parse(request.body);
+  const { name, email, password, planId, phone, cpf } = bodySchema.parse(
+    request.body,
+  );
 
-  const user = await userService.register(name, email, password, planId);
+  const result = await userService.register(name, email, password, planId, phone, cpf);
 
-  return reply.status(201).send({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-  });
+  return reply.status(201).send(result);
 }
 
 export async function login(request: FastifyRequest, reply: FastifyReply) {

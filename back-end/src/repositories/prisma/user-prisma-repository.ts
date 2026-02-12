@@ -13,15 +13,28 @@ export class UserPrismaRepository {
     });
   }
 
-  async create(data: { name: string; email: string; password: string }) {
+  async create(data: {
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+    cpf: string;
+  }) {
     return await this.prisma.user.create({
       data,
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
+        cpf: true,
         role: true,
         createdAt: true,
+        addresses: {
+          select: {
+            zipCode: true,
+          },
+        },
       },
     });
   }

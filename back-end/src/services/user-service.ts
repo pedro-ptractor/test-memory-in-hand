@@ -3,47 +3,71 @@ import { UserPrismaRepository } from '../repositories/prisma/user-prisma-reposit
 import { PlanPrismaRepository } from '../repositories/prisma/plan-prisma-repository.js';
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
+import { abacatePay } from '../lib/abacatepay.js';
 
 export class UserService {
   async register(
     name: string,
     email: string,
     password: string,
+    phone: string,
+    cpf: string,
     planId: string,
   ) {
-    return prisma.$transaction(async (tx) => {
-      const userRepository = new UserPrismaRepository(tx);
-      const planRepository = new PlanPrismaRepository(tx);
-      const subscriptionRepository = new SubscriptionPrismaRepository(tx);
+    const { userCreate, plan, subscription } = await prisma.$transaction(
+      async (tx) => {
+        const userRepository = new UserPrismaRepository(tx);
+        const planRepository = new PlanPrismaRepository(tx);
+        const subscriptionRepository = new SubscriptionPrismaRepository(tx);
 
-      const user = await userRepository.findByEmail(email);
+        const user = await userRepository.findByEmail(email);
 
-      if (user) {
-        throw new Error('Email already in use');
-      }
+        if (user) {
+          throw new Error('Email already in use');
+        }
 
-      const plan = await planRepository.findPlanById(planId);
+        const plan = await planRepository.findPlanById(planId);
 
-      if (!plan) {
-        throw new Error('Plan not found');
-      }
+        if (!plan) {
+          throw new Error('Plan not found');
+        }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-      const userCreate = await userRepository.create({
-        name,
-        email,
-        password: hashedPassword,
-      });
+        const userCreate = await userRepository.create({
+          name,
+          email,
+          password: hashedPassword,
+          phone,
+          cpf,
+        });
 
-      await subscriptionRepository.create({
-        userId: userCreate.id,
-        planId: plan.id,
-        status: 'PENDING',
-      });
+        const subscription = await subscriptionRepository.create({
+          userId: userCreate.id,
+          planId: plan.id,
+          status: 'PENDING',
+        });
 
-      return userCreate;
+        return { userCreate, subscription, plan };
+      },
+    );
+
+    const checkout = await abacatePay.createPix({
+      customer: {
+        name: userCreate.name,
+        email: userCreate.email,
+        cellphone: userCreate.phone,
+        cpf: userCreate.cpf,
+      },
+      amount: plan.price.toNumber(),
+      externalReference: subscription.id,
     });
+
+    console.log(checkout);
+    return {
+      qrCode: checkout.qrCode,
+      copyPaste: checkout.copyPaste,
+    };
   }
 
   async login(email: string, password: string) {
@@ -65,6 +89,7 @@ export class UserService {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
     };
   }
 }
