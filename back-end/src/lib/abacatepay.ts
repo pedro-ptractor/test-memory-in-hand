@@ -50,4 +50,26 @@ export const abacatePay = {
       throw error;
     }
   },
+  async simulatePayment({ pixQrCodeId }: { pixQrCodeId: string }) {
+    const response = await fetch(
+      `https://api.abacatepay.com/v1/pixQrCode/simulate-payment?id=${pixQrCodeId}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.ABACATEPAY_SECRET}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metadata: {},
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(JSON.stringify(error));
+    }
+
+    return await response.json();
+  },
 };

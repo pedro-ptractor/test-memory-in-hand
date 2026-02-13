@@ -58,21 +58,31 @@ model Plan {
 }
 
 model Subscription {
-  id                    String             @id @default(uuid())
-  status                SubscriptionStatus @default(PENDING)
-  gatewayCustomerId     String?
-  gatewaySubscriptionId String?
-  gatewayPaymentId      String?
-  startDate             DateTime?
-  endDate               DateTime?
-  userId                String
-  user                  User               @relation(fields: [userId], references: [id])
-  planId                String
-  plan                  Plan               @relation(fields: [planId], references: [id])
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id        String             @id @default(uuid())
+  status    SubscriptionStatus @default(PENDING)
+  startDate DateTime?
+  endDate   DateTime?
+  userId    String
+  user      User               @relation(fields: [userId], references: [id])
+  planId    String
+  plan      Plan               @relation(fields: [planId], references: [id])
+  payments  Payment[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
 
-  @@index([userId])
+model Payment {
+  id               String        @id @default(uuid())
+  gatewayPaymentId String
+  amountInCents    Int
+  status           PaymentStatus @default(PENDING) // PENDING, PAID, EXPIRED
+  pixCode          String?
+  pixQrCodeBase64  String?
+  expiresAt        DateTime?
+  paidAt           DateTime?
+  subscriptionId   String
+  subscription     Subscription  @relation(fields: [subscriptionId], references: [id])
+  createdAt        DateTime      @default(now())
 }
 
 model MonthlyCycle {
@@ -118,6 +128,13 @@ enum PackStatus {
 enum Role {
   USER
   ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELED
+  EXPIRED
 }
 
 enum SubscriptionStatus {

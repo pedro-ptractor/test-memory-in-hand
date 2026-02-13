@@ -19,7 +19,9 @@ export class PlanPrismaRepository {
     photoLimit: number;
   }): Promise<Plan> {
     return await this.prisma.plan.create({
-      data,
+      data: {
+        ...data,
+      },
     });
   }
 }

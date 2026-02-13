@@ -25,4 +25,24 @@ export class SubscriptionPrismaRepository {
       },
     });
   }
+
+  async activate(subscriptionId: string) {
+    return this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+      },
+    });
+  }
+
+  async expire(subscriptionId: string) {
+    return this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+  }
 }

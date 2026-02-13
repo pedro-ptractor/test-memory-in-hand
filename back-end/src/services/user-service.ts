@@ -4,16 +4,24 @@ import { PlanPrismaRepository } from '../repositories/prisma/plan-prisma-reposit
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 import { abacatePay } from '../lib/abacatepay.js';
+import { PaymentPrismaRepository } from '../repositories/prisma/payment-prisma-repository.js';
 
 export class UserService {
-  async register(
-    name: string,
-    email: string,
-    password: string,
-    phone: string,
-    cpf: string,
-    planId: string,
-  ) {
+  async register({
+    name,
+    email,
+    password,
+    phone,
+    cpf,
+    planId,
+  }: {
+    name: string;
+    email: string;
+    password: string;
+    phone: string;
+    cpf: string;
+    planId: string;
+  }) {
     const { userCreate, plan, subscription } = await prisma.$transaction(
       async (tx) => {
         const userRepository = new UserPrismaRepository(tx);
@@ -59,14 +67,33 @@ export class UserService {
         cellphone: userCreate.phone,
         cpf: userCreate.cpf,
       },
-      amount: plan.price.toNumber(),
+      //eu preciso validar essa transformação, preciso sempre lidar com centavos
+      amount: Math.round(plan.price.toNumber() * 100),
       externalReference: subscription.id,
     });
 
+    const paymentRepository = new PaymentPrismaRepository(prisma);
+
+    const payment = await paymentRepository.create({
+      gatewayPaymentId: checkout.data.id,
+      amountInCents: Math.round(plan.price.toNumber() * 100),
+      status: 'PENDING',
+      subscriptionId: subscription.id,
+      pixCode: checkout.data.brCode,
+      pixQrCodeBase64: checkout.data.brCodeBase64,
+    });
+
     console.log(checkout);
+
+    //mais pra frente eu vou ter que lidar com falhas referente á por exemplo, se tiver um problema
+    //no gatway de pagamento, eu cancelo eu cancelo payment e outras estratégias referente a isso.
     return {
-      qrCode: checkout.qrCode,
-      copyPaste: checkout.copyPaste,
+      subscriptionId: subscription.id,
+      paymentId: payment.id,
+      pix: {
+        copyPaste: checkout.data.brCode,
+        qrCodeBase64: checkout.data.brCodeBase64,
+      },
     };
   }
 

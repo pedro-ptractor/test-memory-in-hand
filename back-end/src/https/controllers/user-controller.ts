@@ -18,9 +18,16 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     request.body,
   );
 
-  const result = await userService.register(name, email, password, planId, phone, cpf);
+  const result = await userService.register({
+    name,
+    email,
+    password,
+    planId,
+    phone,
+    cpf,
+  });
 
-  return reply.status(201).send(result);
+  return reply.status(201).send({ result });
 }
 
 export async function login(request: FastifyRequest, reply: FastifyReply) {
