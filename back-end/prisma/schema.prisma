@@ -47,28 +47,38 @@ model Address {
 }
 
 model Plan {
-  id         String   @id @default(uuid())
-  name       String
-  price      Decimal
-  photoLimit Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
+  id            String         @id @default(uuid())
+  name          String
+  photoLimit    Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
+  planPrices    PlanPrice[]
+}
+
+model PlanPrice {
+  id        String       @id @default(uuid())
+  planId    String
+  plan      Plan         @relation(fields: [planId], references: [id])
+  price     Decimal // valor do ciclo
+  cycle     BillingCycle
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model Subscription {
-  id        String             @id @default(uuid())
-  status    SubscriptionStatus @default(PENDING)
-  startDate DateTime?
-  endDate   DateTime?
-  userId    String
-  user      User               @relation(fields: [userId], references: [id])
-  planId    String
-  plan      Plan               @relation(fields: [planId], references: [id])
-  payments  Payment[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id           String             @id @default(uuid())
+  status       SubscriptionStatus @default(PENDING)
+  startDate    DateTime?
+  endDate      DateTime?
+  userId       String
+  billingCycle BillingCycle       @default(MONTHLY)
+  user         User               @relation(fields: [userId], references: [id])
+  planId       String
+  plan         Plan               @relation(fields: [planId], references: [id])
+  payments     Payment[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model Payment {
@@ -94,18 +104,17 @@ model MonthlyCycle {
 }
 
 model PhotoPack {
-  id              String     @id @default(uuid())
-  userId          String
-  monthlyCycleId  String
+  id              String       @id @default(uuid())
   addressSnapshot Json
-  status          PackStatus @default(PENDING)
+  status          PackStatus   @default(PENDING)
   trackingCode    String?
   shippingDate    DateTime?
-  createdAt       DateTime   @default(now())
-
-  user         User         @relation(fields: [userId], references: [id])
-  monthlyCycle MonthlyCycle @relation(fields: [monthlyCycleId], references: [id])
-  photos       Photo[]
+  createdAt       DateTime     @default(now())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  monthlyCycleId  String
+  monthlyCycle    MonthlyCycle @relation(fields: [monthlyCycleId], references: [id])
+  photos          Photo[]
 }
 
 model Photo {
@@ -115,6 +124,11 @@ model Photo {
   createdAt   DateTime @default(now())
 
   photoPack PhotoPack @relation(fields: [photoPackId], references: [id])
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
 }
 
 enum PackStatus {

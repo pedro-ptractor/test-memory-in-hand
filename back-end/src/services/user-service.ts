@@ -5,6 +5,8 @@ import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 import { abacatePay } from '../lib/abacatepay.js';
 import { PaymentPrismaRepository } from '../repositories/prisma/payment-prisma-repository.js';
+import type { $Enums } from '../generated/prisma/client.js';
+import { PlanPricePrismaRepository } from '../repositories/prisma/plan-price-prisma-repository.js';
 
 export class UserService {
   async register({
@@ -14,6 +16,7 @@ export class UserService {
     phone,
     cpf,
     planId,
+    billingCycle,
   }: {
     name: string;
     email: string;
@@ -21,11 +24,13 @@ export class UserService {
     phone: string;
     cpf: string;
     planId: string;
+    billingCycle: $Enums.BillingCycle;
   }) {
     const { userCreate, plan, subscription } = await prisma.$transaction(
       async (tx) => {
         const userRepository = new UserPrismaRepository(tx);
         const planRepository = new PlanPrismaRepository(tx);
+        const planPriceRepository = new PlanPricePrismaRepository(tx);
         const subscriptionRepository = new SubscriptionPrismaRepository(tx);
 
         const user = await userRepository.findByEmail(email);
@@ -33,8 +38,13 @@ export class UserService {
         if (user) {
           throw new Error('Email already in use');
         }
+        console.log(planId, billingCycle);
 
-        const plan = await planRepository.findPlanById(planId);
+        // const plan = await planRepository.findPlanById(planId);
+        const plan = await planPriceRepository.findByPlanAndCycle(
+          planId,
+          billingCycle,
+        );
 
         if (!plan) {
           throw new Error('Plan not found');
@@ -52,8 +62,9 @@ export class UserService {
 
         const subscription = await subscriptionRepository.create({
           userId: userCreate.id,
-          planId: plan.id,
+          planId: plan.planId,
           status: 'PENDING',
+          billingCycle,
         });
 
         return { userCreate, subscription, plan };

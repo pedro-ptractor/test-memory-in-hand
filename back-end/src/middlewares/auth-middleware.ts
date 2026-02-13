@@ -6,6 +6,13 @@ export async function authMiddleware(
 ) {
   try {
     await request.jwtVerify();
+
+    // Aqui está a correção
+    const userId = request.user;
+
+    if (!userId) {
+      return reply.status(401).send({ message: 'Unauthorized' });
+    }
   } catch {
     return reply.status(401).send({
       message: 'Unauthorized',

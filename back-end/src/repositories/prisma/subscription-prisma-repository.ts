@@ -12,27 +12,55 @@ export class SubscriptionPrismaRepository {
     userId,
     planId,
     status,
+    billingCycle,
   }: {
     userId: string;
     planId: string;
     status: $Enums.SubscriptionStatus;
+    billingCycle: $Enums.BillingCycle;
   }): Promise<Subscription> {
     return await this.prisma.subscription.create({
       data: {
         userId,
         planId,
         status,
+        billingCycle,
       },
     });
   }
 
-  async activate(subscriptionId: string) {
+  async findByUserIdAndActive(
+    userId: string,
+  ): Promise<Prisma.SubscriptionGetPayload<{
+    include: {
+      plan: true;
+    };
+  }> | null> {
+    return this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        endDate: { gte: new Date() },
+      },
+      include: {
+        plan: true,
+      },
+    });
+  }
+
+  async findById(subscriptionId: string): Promise<Subscription | null> {
+    return this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+  }
+
+  async activate(subscriptionId: string, endDate: Date) {
     return this.prisma.subscription.update({
       where: { id: subscriptionId },
       data: {
         status: 'ACTIVE',
         startDate: new Date(),
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        endDate,
       },
     });
   }

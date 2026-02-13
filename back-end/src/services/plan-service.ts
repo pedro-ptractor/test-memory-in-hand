@@ -1,18 +1,29 @@
+import type { $Enums } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
+import { PlanPricePrismaRepository } from '../repositories/prisma/plan-price-prisma-repository.js';
 import { PlanPrismaRepository } from '../repositories/prisma/plan-prisma-repository.js';
 
 export class PlanService {
   async create({
     name,
-    price,
     photoLimit,
+    price,
+    cycle,
   }: {
     name: string;
-    price: number;
     photoLimit: number;
+    price: number;
+    cycle: $Enums.BillingCycle;
   }) {
     const planRepository = new PlanPrismaRepository(prisma);
-    const planCreate = await planRepository.create({ name, price, photoLimit });
-    return planCreate;
+    const planPriceRepository = new PlanPricePrismaRepository(prisma);
+    const planCreate = await planRepository.create({ name, photoLimit });
+
+    const planPriceCreate = await planPriceRepository.create({
+      cycle,
+      price,
+      planId: planCreate.id,
+    });
+    return { planCreate, planPriceCreate };
   }
 }

@@ -11,6 +11,7 @@ export const abacatePay = {
     amount: number;
     externalReference: string;
   }) {
+    console.log(data);
     try {
       const response = await fetch(
         'https://api.abacatepay.com/v1/pixQrCode/create',

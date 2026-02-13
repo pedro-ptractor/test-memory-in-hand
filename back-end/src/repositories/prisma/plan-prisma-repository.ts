@@ -13,14 +13,11 @@ export class PlanPrismaRepository {
     });
   }
 
-  async create(data: {
-    name: string;
-    price: number;
-    photoLimit: number;
-  }): Promise<Plan> {
+  async create(data: { name: string; photoLimit: number }): Promise<Plan> {
     return await this.prisma.plan.create({
       data: {
-        ...data,
+        name: data.name,
+        photoLimit: data.photoLimit,
       },
     });
   }

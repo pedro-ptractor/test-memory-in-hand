@@ -33,20 +33,34 @@ export class AbacateWebhookService {
       if (!payment) {
         throw new Error('Payment not found');
       }
-
       // 🔒 Idempotência
       if (payment.status === 'PAID') {
         return { message: 'Already processed' };
       }
 
+      const subscription = await subscriptionRepository.findById(
+        payment.subscriptionId,
+      );
+
+      if (!subscription) {
+        throw new Error('Assinature not found');
+      }
+
       if (data.pixQrCode.status === 'PAID') {
+        const endDate = new Date();
+
+        endDate.setMonth(
+          endDate.getMonth() +
+            (subscription.billingCycle === 'ANNUAL' ? 12 : 1),
+        );
+
         await paymentRepository.updateStatus(payment.id, {
           status: 'PAID',
           paidAt: new Date(),
-          expiresAt: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+          expiresAt: endDate,
         });
 
-        await subscriptionRepository.activate(payment.subscriptionId);
+        await subscriptionRepository.activate(payment.subscriptionId, endDate);
       }
 
       if (data.pixQrCode.status === 'EXPIRED') {

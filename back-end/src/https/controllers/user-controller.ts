@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { UserService } from '../../services/user-service.js';
+import { $Enums } from '../../generated/prisma/client.js';
 
 const userService = new UserService();
 
@@ -12,22 +13,28 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     planId: z.string(),
     phone: z.string(),
     cpf: z.string(),
+    billingCycle: z.enum($Enums.BillingCycle),
   });
 
-  const { name, email, password, planId, phone, cpf } = bodySchema.parse(
-    request.body,
-  );
+  const { name, email, password, planId, phone, cpf, billingCycle } =
+    bodySchema.parse(request.body);
 
-  const result = await userService.register({
-    name,
-    email,
-    password,
-    planId,
-    phone,
-    cpf,
-  });
+  try {
+    const result = await userService.register({
+      name,
+      email,
+      password,
+      planId,
+      phone,
+      cpf,
+      billingCycle,
+    });
 
-  return reply.status(201).send({ result });
+    return reply.status(201).send({ result });
+  } catch (error) {
+    console.log(error);
+    reply.status(500).send({ error });
+  }
 }
 
 export async function login(request: FastifyRequest, reply: FastifyReply) {
