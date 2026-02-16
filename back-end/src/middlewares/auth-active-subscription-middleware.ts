@@ -8,7 +8,6 @@ export async function ensureActiveSubscription(
 ) {
   const { sub } = request.user;
 
-  console.log(sub);
   if (!sub) {
     return reply.status(401).send({
       error: 'Unauthorized',

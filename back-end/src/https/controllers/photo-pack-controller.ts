@@ -1,9 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { file, z } from 'zod';
-import { UserService } from '../../services/user-service.js';
-import { $Enums } from '../../generated/prisma/client.js';
+import { PhotoPackService } from '../../services/photo-pack-service.js';
 
-// const userService = new UserService();
+const photoPackService = new PhotoPackService();
 
 export async function create(request: FastifyRequest, reply: FastifyReply) {
   const { sub: userId } = request.user;
@@ -16,17 +14,23 @@ export async function create(request: FastifyRequest, reply: FastifyReply) {
     for await (const part of parts) {
       if (part.type === 'file') {
         files.push(part);
+
+        await part.toBuffer(); // consumir o stream
       }
     }
 
     if (files.length === 0) {
-      reply.status(400).send({
+      return reply.status(400).send({
         message: 'Not files uploaded',
       });
     }
-    console.log(files, userId);
-    reply.send({ status: true });
+    console.log(files);
+
+    const photos = await photoPackService.create({ userId, files });
+
+    reply.status(201).send({ photos });
   } catch (error) {
+    console.log(error);
     reply.status(500).send({
       message: error,
     });

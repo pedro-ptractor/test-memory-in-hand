@@ -99,31 +99,30 @@ model MonthlyCycle {
   id         String      @id @default(uuid())
   year       Int
   month      Int
-  createdAt  DateTime    @default(now())
   photoPacks PhotoPack[]
+  createdAt  DateTime    @default(now())
 }
 
 model PhotoPack {
-  id              String       @id @default(uuid())
-  addressSnapshot Json
-  status          PackStatus   @default(PENDING)
-  trackingCode    String?
-  shippingDate    DateTime?
-  createdAt       DateTime     @default(now())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  monthlyCycleId  String
-  monthlyCycle    MonthlyCycle @relation(fields: [monthlyCycleId], references: [id])
-  photos          Photo[]
+  id             String       @id @default(uuid())
+  status         PackStatus   @default(PENDING)
+  trackingCode   String?
+  shippingDate   DateTime?
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  monthlyCycleId String
+  monthlyCycle   MonthlyCycle @relation(fields: [monthlyCycleId], references: [id])
+  photos         Photo[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 model Photo {
-  id          String   @id @default(uuid())
-  photoPackId String
+  id          String    @id @default(uuid())
   url         String
-  createdAt   DateTime @default(now())
-
-  photoPack PhotoPack @relation(fields: [photoPackId], references: [id])
+  photoPackId String
+  photoPack   PhotoPack @relation(fields: [photoPackId], references: [id])
+  createdAt   DateTime  @default(now())
 }
 
 enum BillingCycle {

@@ -1,9 +1,10 @@
-import path from 'path';
+import { randomUUID } from 'node:crypto';
+import { createWriteStream, existsSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { PhotoPackPrismaRepository } from '../repositories/prisma/photo-pack-prisma-repository.js';
+import { MonthlyCyclePrismaRepository } from '../repositories/prisma/monthly-cycle-prisma-repository.js';
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { randomUUID } from 'crypto';
-import { MonthlyCyclePrismaRepository } from '../repositories/prisma/monthly-cycle-prisma-repository.js';
 
 export class PhotoPackService {
   async create({ userId, files }: { userId: string; files: any[] }) {
@@ -13,7 +14,11 @@ export class PhotoPackService {
       await subscriptionRepository.findByUserIdAndActive(userId);
 
     if (!subscription) {
-      throw new Error('subscription not found');
+      throw new Error('Subscription not found');
+    }
+
+    if (files.length === 0) {
+      throw new Error('No files uploaded');
     }
 
     if (files.length > subscription.plan.photoLimit) {
@@ -25,44 +30,66 @@ export class PhotoPackService {
       mkdirSync(uploadDir);
     }
 
-    const savedPhotos: { url: string }[] = [];
-
-    for (const file of files) {
-      const fileExt = path.extname(file.filename);
-      const fileName = `${randomUUID()}${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      await new Promise((resolve, reject) => {
-        const writeStream = createWriteStream(filePath);
-        file.file.pipe(writeStream);
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-      });
-
-      savedPhotos.push({
-        url: `/uploads/${fileName}`,
-      });
-    }
-
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
-    await prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
       const monthlyCycleRepository = new MonthlyCyclePrismaRepository(tx);
+      const photoPackRepository = new PhotoPackPrismaRepository(tx);
 
-      const monthlyCycle = await monthlyCycleRepository.find({ month, year });
+      let monthlyCycle = await monthlyCycleRepository.find({ month, year });
 
       if (!monthlyCycle) {
-        const createMonthlyCycle = await monthlyCycleRepository.create({
+        monthlyCycle = await monthlyCycleRepository.create({
           month,
           year,
         });
-
-        //preciso terminar de construir esse service que vai criar o photoPack
-        // a ideia é enviar as 12 fotos por exemplo, verificar se existe montlyCycle
-        //se não tiver criar, ai depois criar o photopack - e registrar as Photo aqui também
       }
+
+      const existingPack = await tx.photoPack.findFirst({
+        where: {
+          userId,
+          monthlyCycleId: monthlyCycle.id,
+        },
+      });
+
+      if (existingPack)
+        throw new Error('You have already submitted photos this month');
+
+      const photoPack = await photoPackRepository.create({
+        userId,
+        monthlyCycleId: monthlyCycle.id,
+      });
+
+      const photosToCreate: { url: string; photoPackId: string }[] = [];
+
+      for (const file of files) {
+        const fileExt = path.extname(file.filename);
+        const fileName = `${randomUUID()}${fileExt}`;
+        const filePath = path.join(uploadDir, fileName);
+
+        await new Promise((resolve, reject) => {
+          const writeStream = createWriteStream(filePath);
+          file.file.pipe(writeStream);
+          writeStream.on('finish', resolve);
+          writeStream.on('error', reject);
+        });
+
+        photosToCreate.push({
+          url: `/uploads/${fileName}`,
+          photoPackId: photoPack.id,
+        });
+      }
+
+      await tx.photo.createMany({
+        data: photosToCreate,
+      });
+
+      return tx.photoPack.findUnique({
+        where: { id: photoPack.id },
+        include: { photos: true },
+      });
     });
   }
 }

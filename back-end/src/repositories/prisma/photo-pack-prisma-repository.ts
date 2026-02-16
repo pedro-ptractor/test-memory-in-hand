@@ -23,7 +23,6 @@ export class PhotoPackPrismaRepository {
 
   async create(data: {
     userId: string;
-    addressSnapshot: string;
     monthlyCycleId: string;
   }): Promise<PhotoPack> {
     return await this.prisma.photoPack.create({
