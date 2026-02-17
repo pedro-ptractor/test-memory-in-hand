@@ -6,14 +6,12 @@ import { MonthlyCyclePrismaRepository } from '../repositories/prisma/monthly-cyc
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 import { NotFoundSubscription } from './erros/subscription-errors.js';
-import {
-  AlreadySubmittedPhotos,
-  NotFilesUploaded,
-} from './erros/photo-pack-errors.js';
+import { AlreadySubmittedPhotos } from './erros/photo-pack-errors.js';
 import { PhotoLimitExceeded } from './erros/photo-errors.js';
+import type { MultipartFile } from '@fastify/multipart';
 
 export class PhotoPackService {
-  async create({ userId, files }: { userId: string; files: any[] }) {
+  async create({ userId, files }: { userId: string; files: MultipartFile[] }) {
     const subscriptionRepository = new SubscriptionPrismaRepository(prisma);
 
     const subscription =
