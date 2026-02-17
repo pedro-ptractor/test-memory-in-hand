@@ -16,7 +16,7 @@ export async function create(request: FastifyRequest, reply: FastifyReply) {
     if (part.type === 'file') {
       files.push(part);
 
-      await part.toBuffer(); // consumir o stream
+      await part.toBuffer();
     }
   }
 
