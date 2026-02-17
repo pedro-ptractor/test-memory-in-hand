@@ -22,7 +22,6 @@ export async function create(request: FastifyRequest, reply: FastifyReply) {
   if (files.length === 0) {
     throw new NotFilesUploaded();
   }
-  console.log(files);
 
   const photos = await photoPackService.create({ userId, files });
 
