@@ -5,6 +5,12 @@ import { PhotoPackPrismaRepository } from '../repositories/prisma/photo-pack-pri
 import { MonthlyCyclePrismaRepository } from '../repositories/prisma/monthly-cycle-prisma-repository.js';
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
+import { NotFoundSubscription } from './erros/subscription-errors.js';
+import {
+  AlreadySubmittedPhotos,
+  NotFilesUploaded,
+} from './erros/photo-pack-errors.js';
+import { PhotoLimitExceeded } from './erros/photo-errors.js';
 
 export class PhotoPackService {
   async create({ userId, files }: { userId: string; files: any[] }) {
@@ -14,15 +20,11 @@ export class PhotoPackService {
       await subscriptionRepository.findByUserIdAndActive(userId);
 
     if (!subscription) {
-      throw new Error('Subscription not found');
-    }
-
-    if (files.length === 0) {
-      throw new Error('No files uploaded');
+      throw new NotFoundSubscription();
     }
 
     if (files.length > subscription.plan.photoLimit) {
-      throw new Error('Photo limit exceeded');
+      throw new PhotoLimitExceeded();
     }
 
     const uploadDir = path.resolve('uploads');
@@ -54,8 +56,7 @@ export class PhotoPackService {
         },
       });
 
-      if (existingPack)
-        throw new Error('You have already submitted photos this month');
+      if (existingPack) throw new AlreadySubmittedPhotos();
 
       const photoPack = await photoPackRepository.create({
         userId,

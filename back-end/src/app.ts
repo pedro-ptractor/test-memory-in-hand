@@ -6,6 +6,7 @@ import cors from '@fastify/cors';
 import { mainRoutes } from './https/routes/main-route.js';
 import { env } from './env/index.js';
 import path from 'path';
+import { HttpError } from './services/erros/http-error.js';
 
 export const app = Fastify({});
 
@@ -33,3 +34,15 @@ app.register(multipart, {
 });
 
 app.register(mainRoutes, { prefix: '/api' });
+
+app.setErrorHandler((error, request, reply) => {
+  if (error instanceof HttpError) {
+    return reply.status(error.statusCode).send({
+      error: error.message,
+    });
+  }
+
+  return reply.status(500).send({
+    error: 'Internal server error',
+  });
+});
