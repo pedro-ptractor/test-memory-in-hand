@@ -6,11 +6,118 @@ import { MonthlyCyclePrismaRepository } from '../repositories/prisma/monthly-cyc
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 import { NotFoundSubscription } from './erros/subscription-errors.js';
-import { AlreadySubmittedPhotos } from './erros/photo-pack-errors.js';
+import {
+  AlreadySubmittedPhotos,
+  NotFoundPack,
+} from './erros/photo-pack-errors.js';
 import { PhotoLimitExceeded } from './erros/photo-errors.js';
 import type { MultipartFile } from '@fastify/multipart';
+import type { AdminPhotoPackListDTO } from '../types/admin-photo-pack-types.js';
+import type { $Enums, Prisma } from '../generated/prisma/client.js';
 
 export class PhotoPackService {
+  async editPackPhoto({
+    packPhotoId,
+    data,
+  }: {
+    packPhotoId: string;
+    data: {
+      status: $Enums.PackStatus;
+      trackingCode: string | null;
+      shippingDate: Date | null;
+    };
+  }) {
+    const photoPackRepository = new PhotoPackPrismaRepository(prisma);
+
+    const pack = await photoPackRepository.findUnique({ packPhotoId });
+
+    if (!pack) throw new NotFoundPack();
+
+    const editPack = await photoPackRepository.change({
+      packPhotoId: pack.id,
+      data,
+    });
+
+    return editPack;
+  }
+
+  async listUniquePackPhoto({ packPhotoId }: { packPhotoId: string }) {
+    const photoPackRepository = new PhotoPackPrismaRepository(prisma);
+
+    const pack = await photoPackRepository.findUnique({ packPhotoId });
+
+    if (!pack) throw new NotFoundPack();
+
+    const formattedPack = {
+      id: pack.id,
+      status: pack.status,
+      trackingCode: pack.trackingCode,
+      shippingDate: pack.shippingDate,
+      createdAt: pack.createdAt,
+      photos: pack.photos,
+      user: {
+        id: pack.user.id,
+        name: pack.user.name,
+        email: pack.user.email,
+        phone: pack.user.phone,
+        cpf: pack.user.cpf,
+        addresses: pack.user.addresses[0] ? pack.user.addresses[0] : null,
+      },
+    };
+
+    return formattedPack;
+  }
+
+  async listPacksPhotoAdmin({
+    page = 1,
+    limit = 10,
+  }: {
+    page?: number;
+    limit?: number;
+  }) {
+    const photoPackRepository = new PhotoPackPrismaRepository(prisma);
+
+    const packs = await photoPackRepository.listAll({
+      page,
+      limit,
+    });
+
+    const formattedPacks: AdminPhotoPackListDTO[] = packs.map((pack) => ({
+      id: pack.id,
+      status: pack.status,
+      trackingCode: pack.trackingCode,
+      shippingDate: pack.shippingDate,
+      createdAt: pack.createdAt,
+      user: {
+        id: pack.user.id,
+        name: pack.user.name,
+        email: pack.user.email,
+        city: pack.user.addresses[0] ? pack.user.addresses[0].city : null,
+        state: pack.user.addresses[0] ? pack.user.addresses[0].state : null,
+      },
+    }));
+
+    const total = packs.length;
+
+    return {
+      data: formattedPacks,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async listPacksPhotos({ userId }: { userId: string }) {
+    const photoPackRepository = new PhotoPackPrismaRepository(prisma);
+
+    const packs = photoPackRepository.listByUserId({ userId });
+
+    return packs;
+  }
+
   async create({ userId, files }: { userId: string; files: MultipartFile[] }) {
     const subscriptionRepository = new SubscriptionPrismaRepository(prisma);
 

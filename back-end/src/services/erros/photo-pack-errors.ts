@@ -11,3 +11,9 @@ export class AlreadySubmittedPhotos extends HttpError {
     super('You have already submitted photos this month', 409);
   }
 }
+
+export class NotFoundPack extends HttpError {
+  constructor() {
+    super('Not found pack', 404);
+  }
+}

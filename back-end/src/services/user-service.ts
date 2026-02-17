@@ -1,14 +1,31 @@
 import bcrypt from 'bcrypt';
 import { UserPrismaRepository } from '../repositories/prisma/user-prisma-repository.js';
-import { PlanPrismaRepository } from '../repositories/prisma/plan-prisma-repository.js';
 import { prisma } from '../lib/prisma.js';
 import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 import { abacatePay } from '../lib/abacatepay.js';
 import { PaymentPrismaRepository } from '../repositories/prisma/payment-prisma-repository.js';
 import type { $Enums } from '../generated/prisma/client.js';
 import { PlanPricePrismaRepository } from '../repositories/prisma/plan-price-prisma-repository.js';
+import { NotFoundSubscription } from './erros/subscription-errors.js';
 
 export class UserService {
+  async cancelSubscription({ userId }: { userId: string }) {
+    const subscriptionRepository = new SubscriptionPrismaRepository(prisma);
+
+    const subscription =
+      await subscriptionRepository.findByUserIdAndActive(userId);
+
+    if (!subscription) {
+      throw new NotFoundSubscription();
+    }
+
+    const statusSubscription = await subscriptionRepository.cancel(
+      subscription.id,
+    );
+
+    return statusSubscription;
+  }
+
   async register({
     name,
     email,
@@ -29,7 +46,6 @@ export class UserService {
     const { userCreate, plan, subscription } = await prisma.$transaction(
       async (tx) => {
         const userRepository = new UserPrismaRepository(tx);
-        const planRepository = new PlanPrismaRepository(tx);
         const planPriceRepository = new PlanPricePrismaRepository(tx);
         const subscriptionRepository = new SubscriptionPrismaRepository(tx);
 
@@ -40,7 +56,6 @@ export class UserService {
         }
         console.log(planId, billingCycle);
 
-        // const plan = await planRepository.findPlanById(planId);
         const plan = await planPriceRepository.findByPlanAndCycle(
           planId,
           billingCycle,

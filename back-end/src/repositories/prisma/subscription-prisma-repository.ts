@@ -73,4 +73,13 @@ export class SubscriptionPrismaRepository {
       },
     });
   }
+
+  async cancel(subscriptionId: string) {
+    return this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: 'CANCELED',
+      },
+    });
+  }
 }

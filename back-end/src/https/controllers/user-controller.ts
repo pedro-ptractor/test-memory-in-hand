@@ -5,6 +5,27 @@ import { $Enums } from '../../generated/prisma/client.js';
 
 const userService = new UserService();
 
+export async function cancelSubscription(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  try {
+    const userSchema = z.object({
+      sub: z.string(),
+      role: z.enum($Enums.Role),
+    });
+
+    const { sub: userId } = userSchema.parse(request.user);
+
+    await userService.cancelSubscription({ userId });
+
+    return reply.status(204).send();
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   const bodySchema = z.object({
     name: z.string(),
