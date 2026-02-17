@@ -16,7 +16,7 @@ export async function editPhotoPack(
     const bodySchema = z.object({
       status: z.enum($Enums.PackStatus),
       trackingCode: z.string().nullable(),
-      shippingDate: z.date().nullable(),
+      shippingDate: z.coerce.date().nullable(),
     });
     const paramsSchema = z.object({
       packPhotoId: z.string(),
