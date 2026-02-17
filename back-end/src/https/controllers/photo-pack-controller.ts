@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { PhotoPackService } from '../../services/photo-pack-service.js';
 import { NotFilesUploaded } from '../../services/erros/photo-pack-errors.js';
+import type { MultipartFile } from '@fastify/multipart';
 
 const photoPackService = new PhotoPackService();
 
@@ -9,7 +10,7 @@ export async function create(request: FastifyRequest, reply: FastifyReply) {
 
   const parts = request.parts();
 
-  const files: any[] = [];
+  const files: MultipartFile[] = [];
 
   for await (const part of parts) {
     if (part.type === 'file') {
