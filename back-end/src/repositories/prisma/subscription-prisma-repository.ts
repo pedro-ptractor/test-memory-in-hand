@@ -54,6 +54,34 @@ export class SubscriptionPrismaRepository {
     });
   }
 
+  async findByUserIdAndPending({
+    userId,
+    status,
+  }: {
+    userId: string;
+    status: $Enums.SubscriptionStatus;
+  }): Promise<Prisma.SubscriptionGetPayload<{
+    include: {
+      user: true;
+      payments: {
+        orderBy: { createdAt: 'desc' };
+      };
+    };
+  }> | null> {
+    return this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        status,
+      },
+      include: {
+        user: true,
+        payments: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
   async activate(subscriptionId: string, endDate: Date) {
     return this.prisma.subscription.update({
       where: { id: subscriptionId },

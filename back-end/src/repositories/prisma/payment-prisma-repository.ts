@@ -30,6 +30,22 @@ export class PaymentPrismaRepository {
     });
   }
 
+  async expirePendingBySubscription({
+    subscriptionId,
+  }: {
+    subscriptionId: string;
+  }) {
+    await this.prisma.payment.updateMany({
+      where: {
+        subscriptionId,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+  }
+
   async create(data: {
     gatewayPaymentId: string;
     amountInCents: number;
@@ -37,6 +53,7 @@ export class PaymentPrismaRepository {
     subscriptionId: string;
     pixCode: string;
     pixQrCodeBase64: string;
+    expiresAt: Date;
   }): Promise<Payment> {
     return await this.prisma.payment.create({
       data: {

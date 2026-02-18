@@ -106,6 +106,7 @@ export class UserService {
       subscriptionId: subscription.id,
       pixCode: checkout.data.brCode,
       pixQrCodeBase64: checkout.data.brCodeBase64,
+      expiresAt: checkout.data.expiresAt,
     });
 
     console.log(checkout);
