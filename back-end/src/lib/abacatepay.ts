@@ -11,7 +11,6 @@ export const abacatePay = {
     amount: number;
     externalReference: string;
   }) {
-    console.log(data);
     try {
       const response = await fetch(
         'https://api.abacatepay.com/v1/pixQrCode/create',
@@ -23,7 +22,7 @@ export const abacatePay = {
           },
           body: JSON.stringify({
             amount: data.amount,
-            expiresIn: 3600, // 1 hora
+            expiresIn: 3600, //1 hora
             description: 'Assinatura do plano',
             customer: {
               name: data.customer.name,
@@ -44,13 +43,14 @@ export const abacatePay = {
       }
 
       const result = await response.json();
-
+      console.log(result);
       return result;
     } catch (error) {
       console.error('Erro ao criar PIX:', error);
       throw error;
     }
   },
+
   async simulatePayment({ pixQrCodeId }: { pixQrCodeId: string }) {
     const response = await fetch(
       `https://api.abacatepay.com/v1/pixQrCode/simulate-payment?id=${pixQrCodeId}`,

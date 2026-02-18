@@ -54,7 +54,6 @@ export class UserService {
         if (user) {
           throw new Error('Email already in use');
         }
-        console.log(planId, billingCycle);
 
         const plan = await planPriceRepository.findByPlanAndCycle(
           planId,

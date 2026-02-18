@@ -13,7 +13,7 @@ import {
 import { PhotoLimitExceeded } from './erros/photo-errors.js';
 import type { MultipartFile } from '@fastify/multipart';
 import type { AdminPhotoPackListDTO } from '../types/admin-photo-pack-types.js';
-import type { $Enums, Prisma } from '../generated/prisma/client.js';
+import type { $Enums } from '../generated/prisma/client.js';
 
 export class PhotoPackService {
   async editPackPhoto({

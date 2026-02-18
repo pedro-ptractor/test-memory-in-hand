@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../lib/prisma.js';
-import { SubscriptionPrismaRepository } from '../repositories/prisma/subscription-prisma-repository.js';
 
 export async function ensureActiveSubscription(
   request: FastifyRequest,
@@ -10,17 +9,52 @@ export async function ensureActiveSubscription(
 
   if (!sub) {
     return reply.status(401).send({
-      error: 'Unauthorized',
+      code: 'UNAUTHORIZED',
     });
   }
 
-  const subscriptionRepository = new SubscriptionPrismaRepository(prisma);
+  const subscription = await prisma.subscription.findFirst({
+    where: { userId: sub },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      payments: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
 
-  const subscription = await subscriptionRepository.findByUserIdAndActive(sub);
+  if (!subscription || subscription.status !== 'ACTIVE') {
+    let actionRequired = 'CREATE_SUBSCRIPTION';
 
-  if (!subscription) {
-    return reply.status(403).send({
-      error: 'Your subscription is inactive or expired.',
+    if (subscription?.status === 'PENDING') {
+      const latestPayment = subscription.payments[0];
+
+      if (!latestPayment) {
+        actionRequired = 'GENERATE_PAYMENT';
+      }
+
+      if (latestPayment?.status === 'PENDING') {
+        if (latestPayment.expiresAt && latestPayment.expiresAt < new Date()) {
+          actionRequired = 'RETRY_PAYMENT';
+        } else {
+          actionRequired = 'SHOW_PIX';
+        }
+      }
+
+      if (
+        latestPayment?.status === 'EXPIRED' ||
+        latestPayment?.status === 'CANCELED'
+      ) {
+        actionRequired = 'RETRY_PAYMENT';
+      }
+    }
+
+    return reply.status(402).send({
+      code: 'SUBSCRIPTION_REQUIRED',
+      subscriptionStatus: subscription?.status ?? 'NONE',
+      actionRequired,
+      subscriptionId: subscription?.id ?? null,
     });
   }
 
