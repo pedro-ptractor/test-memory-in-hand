@@ -93,6 +93,31 @@ export class SubscriptionPrismaRepository {
     });
   }
 
+  async findSubscriptionToUserAcess({
+    userId,
+  }: {
+    userId: string;
+  }): Promise<Prisma.SubscriptionGetPayload<{
+    orderBy: { createdAt: 'desc' };
+    include: {
+      payments: {
+        orderBy: { createdAt: 'desc' };
+        take: 1;
+      };
+    };
+  }> | null> {
+    return this.prisma.subscription.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+  }
+
   async expire(subscriptionId: string) {
     return this.prisma.subscription.update({
       where: { id: subscriptionId },

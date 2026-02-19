@@ -3,8 +3,10 @@ import { z } from 'zod';
 import { UserService } from '../../services/user-service.js';
 import { $Enums } from '../../generated/prisma/client.js';
 import { cpf as CPF } from 'cpf-cnpj-validator';
+import { SubscriptionService } from '../../services/subscription-service.js';
 
 const userService = new UserService();
+const subscriptionService = new SubscriptionService();
 
 export async function cancelSubscription(
   request: FastifyRequest,
@@ -66,18 +68,25 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
     email: z.email(),
     password: z.string(),
   });
+  try {
+    const { email, password } = bodySchema.parse(request.body);
 
-  const { email, password } = bodySchema.parse(request.body);
+    const user = await userService.login(email, password);
+    const subscriptionState = await subscriptionService.resolveUserAccess({
+      userId: user.id,
+    });
 
-  const user = await userService.login(email, password);
+    const token = await reply.jwtSign(
+      { role: user.role },
+      {
+        sub: user.id,
+        expiresIn: '7d',
+      },
+    );
 
-  const token = await reply.jwtSign(
-    { role: user.role },
-    {
-      sub: user.id,
-      expiresIn: '7d',
-    },
-  );
-
-  return reply.send({ token });
+    return reply.send({ token, subscription: subscriptionState });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 }
