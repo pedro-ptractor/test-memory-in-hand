@@ -19,6 +19,7 @@ export async function photoPackRoutes(app: FastifyInstance) {
     create,
   );
 
+  // function para listar os packs para usuário
   app.get(
     '/',
     {
@@ -27,6 +28,7 @@ export async function photoPackRoutes(app: FastifyInstance) {
     getPhotoPacksByUser,
   );
 
+  //rota para conseguirmos enxergar os packs para produção
   app.get(
     '/all',
     {
@@ -35,6 +37,7 @@ export async function photoPackRoutes(app: FastifyInstance) {
     getPhotoPacks,
   );
 
+  // pegar as informações esp de um unico pack
   app.get(
     '/:packPhotoId',
     {
@@ -43,6 +46,7 @@ export async function photoPackRoutes(app: FastifyInstance) {
     getUniquePhotoPack,
   );
 
+  //atualizar o status ou adicionar código de entraga e etc..
   app.put(
     '/:packPhotoId',
     {
